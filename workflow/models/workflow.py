@@ -1,4 +1,5 @@
 # coding=utf-8
+from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
@@ -10,8 +11,18 @@ class WorkFlow(BaseModel):
     in_use = models.BooleanField(default=False)
     process_obj = models.ForeignKey(ContentType)
 
+    class Meta:
+        unique_together = (
+            ("process_obj", "in_use"),
+        )
 
-# TODO flow direction: forword, backward
+
+class TransactionType:
+    FORWARD = 0
+    BACKWARD = 2
+
+
+# TODO flow direction: forward, backward
 class WorkFlowNode(BaseModel):
     START_TYPE = "START"
     END_TYPE = "END"
@@ -23,8 +34,18 @@ class WorkFlowNode(BaseModel):
         (USER_TYPE, _("用户节点")),
         (SYS_TYPE, _("系统节点")),
     )
+
     workflow = models.ForeignKey(WorkFlow)
-    node_type = models.CharField(max_length=100)
+    node_type = models.CharField(max_length=100, choices=NODE_TYPE)
+
+    user = models.ForeignKey(User, null=True)
+    name = models.TextField(null=True)
+    prompt = models.TextField(null=True)
+
+    forward_node = models.ForeignKey('self', null=True)
+    backward_node = models.ForeignKey('self', null=True)
+
+
 
 
 class WorkFlowTransition(BaseModel):
