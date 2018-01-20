@@ -45,7 +45,7 @@ class WorkFlowNode(BaseModel):
     forward_node = models.ForeignKey('self', null=True)
     backward_node = models.ForeignKey('self', null=True)
 
-
+    system_condition = {'des_node1':}
 
 
 class WorkFlowTransition(BaseModel):

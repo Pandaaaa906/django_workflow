@@ -12,17 +12,6 @@ from workflow.utils.error_code import ErrorCode
 from workflow.utils.exceptions import WorkflowException
 
 
-class BaseProcess(BaseModel):
-    @property
-    def active_workflow(self):
-        return WorkFlow.objects.get(in_use=True,
-                                    process_obj=self._meta.model,
-                                    )
-
-    class Meta:
-        abstract = True
-
-
 class Voucher(BaseModel):
     name = None
     proceeding = GenericRelation(Proceeding)
@@ -62,6 +51,7 @@ class Proceeding(BaseModel):
     def post_approval(self):
         """通过审核之后需要执行的函数，"""
 
+    # TODO 要做成不通过，要另外填单的模型
     def proceed(self, user, direction=TransactionType.FORWARD):
         """进行单据"""
         self.can_proceed(user)
@@ -72,7 +62,11 @@ class Proceeding(BaseModel):
         self.current_user = self.workflow_node.user
         self.save()
 
-    # TODO 要做成不通过，要另外填单的模型？
+    def hand_over(self, user, to_user):
+        self.can_proceed(user)
+        self.current_user = to_user
+        self.save()
+
     def can_proceed(self, user):
         if self.current_user != user:
             raise WorkflowException(error_code=ErrorCode.INVALID_NEXT_STATE_FOR_USER)
@@ -97,6 +91,7 @@ class ProcessLog(BaseModel):
     proceeding = models.ForeignKey(Proceeding)
 
 
+# TODO 每当Proceeding变化，添加ProecessLog
 @receiver(post_save)
 def proceeding_log(sender, *args, **kwargs):
     pass
