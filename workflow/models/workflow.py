@@ -1,4 +1,5 @@
 # coding=utf-8
+from annoying.fields import JSONField
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -10,6 +11,8 @@ class WorkFlow(BaseModel):
     name = models.TextField()
     in_use = models.BooleanField(default=False)
     process_obj = models.ForeignKey(ContentType)
+
+    # TODO 流程抄送人M2M
 
     class Meta:
         unique_together = (
@@ -38,14 +41,28 @@ class WorkFlowNode(BaseModel):
     workflow = models.ForeignKey(WorkFlow)
     node_type = models.CharField(max_length=100, choices=NODE_TYPE)
 
-    user = models.ForeignKey(User, null=True)
+    user = models.ForeignKey(User, null=True, blank=True)
     name = models.TextField(null=True)
-    prompt = models.TextField(null=True)
+    prompt = models.TextField(null=True, blank=True)
 
     forward_node = models.ForeignKey('self', null=True)
     backward_node = models.ForeignKey('self', null=True)
 
-    system_condition = {'des_node1':}
+    # 一个系统节点只判断一个条件
+    '''
+    forward_condition = {'attr': 'fk1__fk2__fk3__attr1',
+                        'type': 'int',
+                        'value': 500,
+                        'operator': 'lt',  # lt, le, gt, ge, eq, ne
+                        }
+    '''
+    forward_condition = JSONField(null=True, blank=True,
+                                  default={'attr': None, 'type': None, 'value': None, 'operator': None})
+
+    class Meta:
+        unique_together = (
+            ('workflow_id', 'name')
+        )
 
 
 class WorkFlowTransition(BaseModel):

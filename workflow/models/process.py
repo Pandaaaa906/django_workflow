@@ -12,9 +12,46 @@ from workflow.utils.error_code import ErrorCode
 from workflow.utils.exceptions import WorkflowException
 
 
+class VoucherContent(BaseModel):
+    """如果单据已经进入流程不能修改/删除"""
+    voucher = models.ForeignKey(Voucher)
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if self.voucher.proceeding is not None:
+            raise ValueError("Content of proceeding voucher, can't not modify")
+        super(VoucherContent, self).save(force_insert=force_insert, force_update=force_update, using=using,
+                                         update_fields=update_fields)
+
+    def delete(self, using=None, keep_parents=False):
+        if self.voucher.proceeding is not None:
+            raise ValueError("Content of proceeding voucher, can't not modify")
+        super(VoucherContent, self).delete(using=using, keep_parents=keep_parents)
+
+    class Meta:
+        abstract = True
+
+
 class Voucher(BaseModel):
+    """如果单据已经进入流程不能修改/删除"""
+    # TODO 单据号自动根据code_name得到
+    verbose_name = None
     name = None
+    code_name = None
     proceeding = GenericRelation(Proceeding)
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+
+        if self.proceeding is not None:
+            raise ValueError("Content of proceeding voucher, can't not modify")
+        super(Voucher, self).save(force_insert=force_insert, force_update=force_update, using=using,
+                                  update_fields=update_fields)
+
+    def delete(self, using=None, keep_parents=False):
+        if self.proceeding is not None:
+            raise ValueError("Content of proceeding voucher, can't not modify")
+        super(Voucher, self).delete(using=using, keep_parents=keep_parents)
 
     def submit(self):
         """提交"""
@@ -27,6 +64,7 @@ class Voucher(BaseModel):
         if not created:
             # TODO 要改成合适的错误代码
             raise WorkflowException(error_code=ErrorCode.INVALID_NEXT_STATE_FOR_USER)
+        return True
 
     @property
     def active_workflow(self):
@@ -51,16 +89,29 @@ class Proceeding(BaseModel):
     def post_approval(self):
         """通过审核之后需要执行的函数，"""
 
-    # TODO 要做成不通过，要另外填单的模型
+    # TODO 要做成不通过，要另外填单的模型？
     def proceed(self, user, direction=TransactionType.FORWARD):
         """进行单据"""
         self.can_proceed(user)
-        if direction == TransactionType.FORWARD:
-            self.workflow_node = self.workflow_node.forward_node
-        elif direction == TransactionType.BACKWARD:
-            self.workflow_node = self.workflow_node.backward_node
+        self.workflow_node = self.next_pending_node(direction)
         self.current_user = self.workflow_node.user
         self.save()
+
+    def next_node(self, direction=None):
+        if direction == TransactionType.FORWARD:
+            return self.workflow_node.forward_node
+        elif direction == TransactionType.BACKWARD:
+            return self.workflow_node.backward_node
+
+    def next_pending_node(self, direction):
+        next_node = self.next_node(direction)
+        while next_node.node_type == WorkFlowNode.SYS_TYPE:
+            # TODO fake code
+            if next_node.forward_condition:
+                next_node = next_node.forward_node
+            else:
+                next_node = next_node.backward_node
+        return next_node
 
     def hand_over(self, user, to_user):
         self.can_proceed(user)
@@ -75,7 +126,7 @@ class Proceeding(BaseModel):
     def save(self, *args, **kwargs):
         if not self.pk:
             self.workflow = self.voucher_obj.active_workflow
-            self.workflow_node = WorkFlowNode.objects.get(workflow=self.active_workflow,
+            self.workflow_node = WorkFlowNode.objects.get(workflow=self.workflow,
                                                           node_type=WorkFlowNode.START_TYPE)
         super(Proceeding, self).save(*args, **kwargs)
         if self.workflow_node.node_type == WorkFlowNode.END_TYPE:
