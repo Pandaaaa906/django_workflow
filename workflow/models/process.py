@@ -12,37 +12,20 @@ from workflow.utils.error_code import ErrorCode
 from workflow.utils.exceptions import WorkflowException
 
 
-class VoucherContent(BaseModel):
-    """如果单据已经进入流程不能修改/删除"""
-    voucher = models.ForeignKey(Voucher)
-
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
-        if self.voucher.proceeding is not None:
-            raise ValueError("Content of proceeding voucher, can't not modify")
-        super(VoucherContent, self).save(force_insert=force_insert, force_update=force_update, using=using,
-                                         update_fields=update_fields)
-
-    def delete(self, using=None, keep_parents=False):
-        if self.voucher.proceeding is not None:
-            raise ValueError("Content of proceeding voucher, can't not modify")
-        super(VoucherContent, self).delete(using=using, keep_parents=keep_parents)
-
-    class Meta:
-        abstract = True
-
-
 class Voucher(BaseModel):
-    """如果单据已经进入流程不能修改/删除"""
     # TODO 单据号自动根据code_name得到
     verbose_name = None
     name = None
     code_name = None
-    proceeding = GenericRelation(Proceeding)
+
+    # TODO Limit choices to?
+    proceeding = GenericRelation(Proceeding, object_id_field="voucher_obj_id", content_type_field="voucher_type")
+
+    class Meta:
+        abstract = True
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-
         if self.proceeding is not None:
             raise ValueError("Content of proceeding voucher, can't not modify")
         super(Voucher, self).save(force_insert=force_insert, force_update=force_update, using=using,
@@ -60,14 +43,24 @@ class Voucher(BaseModel):
             # TODO 要改成合适的错误代码
             raise WorkflowException(error_code=ErrorCode.NO_AVAILABLE_INITIAL_STATE)
         # 如果单据已经提交，报错
-        pcd, created = Proceeding.objects.get_or_create(voucher_obj=self)
-        if not created:
+        # TODO 审核不通过后
+        if self.proceeding:
             # TODO 要改成合适的错误代码
             raise WorkflowException(error_code=ErrorCode.INVALID_NEXT_STATE_FOR_USER)
+        Proceeding.objects.get_or_create(voucher_obj=self)
         return True
 
+    def can_submit(self):
+        if not self.proceeding:
+            return True
+        elif Proceeding.objects.filter(voucher_obj=self, )
+
+    def save_submit(self):
+        self.save()
+        self.submit()
+
     @property
-    def active_workflow(self):
+    def workflow(self):
         return WorkFlow.objects.get(in_use=True,
                                     process_obj=self._meta.model,
                                     )
@@ -125,7 +118,7 @@ class Proceeding(BaseModel):
 
     def save(self, *args, **kwargs):
         if not self.pk:
-            self.workflow = self.voucher_obj.active_workflow
+            self.workflow = self.voucher_obj.workflow
             self.workflow_node = WorkFlowNode.objects.get(workflow=self.workflow,
                                                           node_type=WorkFlowNode.START_TYPE)
         super(Proceeding, self).save(*args, **kwargs)

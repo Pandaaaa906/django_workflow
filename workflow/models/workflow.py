@@ -12,7 +12,7 @@ class WorkFlow(BaseModel):
     in_use = models.BooleanField(default=False)
     process_obj = models.ForeignKey(ContentType)
 
-    # TODO 流程抄送人M2M
+    copy_to = models.ManyToManyField(User, verbose_name=_("抄送"))
 
     class Meta:
         unique_together = (
