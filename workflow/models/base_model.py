@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.db.models.base import ModelBase
 from django.utils.translation import ugettext_lazy as _
 
 
@@ -60,7 +61,7 @@ class ModifiedByMixin(models.Model):
 
 
 class PreviousVoucherMixin(models.Model):
-    upper_voucher_type = models.ForeignKey(ContentType, null=True)
+    upper_voucher_type = models.ForeignKey(ContentType, null=True, on_delete="CASCADE")
     upper_voucher_id = models.PositiveIntegerField(null=True)
     upper_voucher = GenericForeignKey('upper_voucher_type', 'upper_voucher_id')
 

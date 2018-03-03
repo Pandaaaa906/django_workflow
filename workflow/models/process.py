@@ -4,6 +4,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models import Q
+from django.db.models.base import ModelBase
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.translation import ugettext_lazy as _
@@ -48,7 +49,6 @@ class Proceeding(CreatedMixin,
 
     flow = models.ForeignKey(Flow, on_delete="CASCADE")
     workflow_node = models.ForeignKey(FlowNode, on_delete="CASCADE")
-
 
     def post_approval(self):
         """通过审核之后需要执行的函数，"""
@@ -101,17 +101,27 @@ class Proceeding(CreatedMixin,
         )
 
 
+class VoucherBase(ModelBase):
+    def __new__(mcs, name, bases, newattrs):
+        if name != 'Voucher':
+            if newattrs.get('verbose_name') is None:
+                raise ValueError(_("单据名称不能为空"))
+            if newattrs.get('code_name') is None:
+                raise ValueError(_("单据code name不能为空"))
+        return super(VoucherBase, mcs).__new__(mcs, name, bases, newattrs)
+
+
 class Voucher(CreatedMixin,
               ModifiedMixin,
               CreatedByMixin,
               ModifiedByMixin,
-              models.Model):
+              models.Model,
+              metaclass=VoucherBase):
     class Meta:
         abstract = True
 
     # TODO 单据号自动根据code_name得到
     verbose_name = None
-    name = None
     code_name = None
 
     # TODO Limit choices to?
@@ -120,16 +130,6 @@ class Voucher(CreatedMixin,
                                  content_type_field="voucher_type",
                                  object_id_field="voucher_obj_id",
                                  limit_choices_to=~Q(status=Proceeding.RETRACTED))
-    """
-    def __init__(self, *args, **kwargs):
-        if self.verbose_name is None:
-            raise ValueError(_("单据名称不能为空"))
-        if self.name is None:
-            raise ValueError(_("单据名称不能为空"))
-        if self.code_name is None:
-            raise ValueError(_("单据code name不能为空"))
-        super(Voucher, self).__init__(self, *args, **kwargs)
-    """
 
     def has_unretracted_process(self):
         if self.proceeding.filter(~Q(status=Proceeding.RETRACTED)).exists():
@@ -158,8 +158,8 @@ class Voucher(CreatedMixin,
             raise ValueError(_("已提交单据不能提交"))
         Proceeding.objects.create(voucher_obj=self)
 
-    def retract(self, user=None):
-        """撤回，将Proceedings.status设为撤销状态"""
+    def retract(self):
+        """撤回，将Proceedings.status设为撤销状态，被拒绝可以撤回"""
         if self.proceeding.exists():
             self.proceeding.update(status=Proceeding.RETRACTED)
         else:
