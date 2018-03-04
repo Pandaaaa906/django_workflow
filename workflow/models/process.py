@@ -44,13 +44,14 @@ class Proceeding(CreatedMixin,
     )
     status = models.CharField(verbose_name=_("状态"), choices=STATUS, default=PROCESSING, max_length=100)
 
-    voucher_type = models.ForeignKey(ContentType, on_delete="CASCADE")
+    voucher_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     voucher_obj_id = models.PositiveIntegerField()
     voucher_obj = GenericForeignKey('voucher_type', 'voucher_obj_id')
 
-    flow = models.ForeignKey(Flow, on_delete="CASCADE")
-    workflow_node = models.ForeignKey(FlowNode, on_delete="CASCADE")
+    flow = models.ForeignKey(Flow, on_delete=models.CASCADE)
+    workflow_node = models.ForeignKey(FlowNode, on_delete=models.CASCADE)
 
+    # TODO 改用approve
     def proceed(self, user, direction=TransactionType.FORWARD):
         """进行单据"""
         self.can_proceed(user)
@@ -90,7 +91,7 @@ class Proceeding(CreatedMixin,
                                                       node_type=FlowNode.START_TYPE)
         super(Proceeding, self).save(*args, **kwargs)
         if self.workflow_node.node_type == FlowNode.END_TYPE:
-            self.post_approval()
+            self.voucher_obj.post_approval()
 
     class Meta:
         unique_together = (
@@ -115,7 +116,8 @@ class Voucher(CreatedMixin,
     proceeding = GenericRelation(Proceeding,
                                  verbose_name=_("流程"),
                                  content_type_field="voucher_type",
-                                 object_id_field="voucher_obj_id")
+                                 object_id_field="voucher_obj_id",
+                                 limit_choices_to=~Q(status=Proceeding.RETRACTED))
 
     def has_unretracted_process(self):
         if self.proceeding.filter(~Q(status=Proceeding.RETRACTED)).exists():
@@ -146,17 +148,28 @@ class Voucher(CreatedMixin,
         # TODO 审核不通过后
         if self.has_unretracted_process():
             raise ValueError(_("已提交单据不能提交"))
-        Proceeding.objects.create(voucher_obj=self)
+        Proceeding.objects.create(voucher_obj=self, created_by=user)
 
-    def retract(self):
-        """撤回，将Proceedings.status设为撤销状态，被拒绝可以撤回"""
-        if self.proceeding.exists():
-            self.proceeding.update(status=Proceeding.RETRACTED)
+    def can_retract(self):
+        """只有PROCESSING,REJECTED,可以撤回"""
+        if self.proceeding.filter(Q(status=Proceeding.PROCESSING)|Q(status=Proceeding.REJECTED)).exists():
+            return True
+        else:
+            return False
+
+    def retract(self, user=None):
+        """撤回，将Proceedings.status设为撤销状态，被审核不通过可以撤回"""
+        if self.can_retract():
+            self.proceeding.update(status=Proceeding.RETRACTED, modified_by=user)
         else:
             raise ValueError(_("单据没有进入流程，不能撤销"))
 
-    def approve(self, user):
-        pass
+    # TODO 审核：ShortCut for Proceeding approve
+    def approve(self, user, _pass=True):
+        proceeding = self.proceeding.filter(Q(status=Proceeding.PROCESSING))[0]
+
+    def get_processing_proceed(self):
+        return self.proceeding.filter(Q(status=Proceeding.PROCESSING))[0]
 
     def save_submit(self, user):
         self.save(user=user)
@@ -167,7 +180,7 @@ class ProcessLog(CreatedMixin,
                  ModifiedMixin,
                  CreatedByMixin,
                  ModifiedByMixin):
-    proceeding = models.ForeignKey(Proceeding, on_delete="CASCADE")
+    proceeding = models.ForeignKey(Proceeding, on_delete=models.CASCADE)
 
 
 # TODO 每当Proceeding变化，添加ProecessLog

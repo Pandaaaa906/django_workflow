@@ -1,3 +1,59 @@
 from django.contrib import admin
 
 # Register your models here.
+from django.db import models
+from django.forms import TextInput, Textarea
+
+from workflow.models import Flow, FlowNode, Proceeding
+from django.utils.translation import ugettext_lazy as _
+
+
+@admin.register(Proceeding)
+class ProceedingAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'status', 'get_voucher_id', 'get_flow_name', 'get_flow_node_name')
+
+    def get_voucher_id(self, obj):
+        return obj.voucher_obj.cat_no
+
+    def get_flow_name(self, obj):
+        return obj.flow.name
+
+    def get_flow_node_name(self, obj):
+        return obj.workflow_node.name
+
+
+class FlowNodeInline(admin.TabularInline):
+    model = FlowNode
+    extra = 1
+    formfield_overrides = {
+        models.CharField: {'widget': TextInput(attrs={'size': '20'})},
+        models.TextField: {'widget': Textarea(attrs={'rows': 3, 'cols': 20})},
+    }
+
+
+@admin.register(Flow)
+class FlowAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'name', 'created', 'created_by', 'get_len_nodes')
+    inlines = [FlowNodeInline, ]
+    formfield_overrides = {
+        models.CharField: {'widget': TextInput(attrs={'size': '20'})},
+        models.TextField: {'widget': Textarea(attrs={'rows': 1, 'cols': 30})},
+    }
+    fieldsets = (
+        [None, {
+            'fields': ('name', 'process_obj', 'in_use'),
+        }],
+        ['Node', {
+            'classes': ('collapse',),
+            'fields': (),
+        }]
+
+    )
+
+    def get_len_nodes(self, obj):
+        return FlowNode.objects.filter(flow=obj).count()
+
+    get_len_nodes.short_description = _("节点数量")
+
+
+admin.site.register(FlowNode)

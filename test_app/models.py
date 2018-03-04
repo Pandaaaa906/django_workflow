@@ -13,6 +13,8 @@ class MyVoucher(Voucher):
     want_to = models.TextField(null=True, blank=True, default=None)
     before = models.DateField(null=True, blank=True, default=None)
 
+    def post_approval(self):
+        pass
 
 
 class Inquiry(Voucher,
@@ -26,4 +28,6 @@ class Inquiry(Voucher,
     unit = models.TextField(null=True, blank=True, default=None)
     quantity = models.PositiveIntegerField(default=1, blank=True)
 
+    def post_approval(self):
+        pass
 

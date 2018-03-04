@@ -33,7 +33,7 @@ class CreatedByMixin(models.Model):
     created_by = models.ForeignKey(User, verbose_name=_("新建人"),
                                    null=True, blank=True, default=None,
                                    editable=False,
-                                   on_delete="CASCADE",
+                                   on_delete=models.CASCADE,
                                    related_name="%(app_label)s_%(class)s_created")
 
     def save(self, *args, **kwargs):
@@ -49,7 +49,7 @@ class ModifiedByMixin(models.Model):
     modified_by = models.ForeignKey(User, verbose_name=_("修改人"),
                                     null=True, blank=True, default=None,
                                     editable=False,
-                                    on_delete="CASCADE",
+                                    on_delete=models.CASCADE,
                                     related_name="%(app_label)s_%(class)s_modified")
 
     def save(self, *args, **kwargs):
@@ -61,7 +61,7 @@ class ModifiedByMixin(models.Model):
 
 
 class PreviousVoucherMixin(models.Model):
-    upper_voucher_type = models.ForeignKey(ContentType, null=True, on_delete="CASCADE")
+    upper_voucher_type = models.ForeignKey(ContentType, null=True, on_delete=models.CASCADE)
     upper_voucher_id = models.PositiveIntegerField(null=True)
     upper_voucher = GenericForeignKey('upper_voucher_type', 'upper_voucher_id')
 
