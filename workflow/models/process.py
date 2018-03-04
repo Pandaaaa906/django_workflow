@@ -1,21 +1,16 @@
 # coding=utf-8
-from itertools import chain
-
-from django.apps import apps
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models import Q
-from django.db.models.base import ModelBase
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.translation import ugettext_lazy as _
 
-from workflow.utils.functions import AbstractMeta
-from workflow.utils.permissions import VOUCHER_PERMISSIONS
+from workflow.models.base import VoucherBase
 from .flow import Flow, FlowNode, TransactionType
-from workflow.models.base_model import ModifiedByMixin, CreatedByMixin, ModifiedMixin, CreatedMixin
+from workflow.models.mixin import ModifiedByMixin, CreatedByMixin, ModifiedMixin, CreatedMixin
 from workflow.utils.error_code import ErrorCode
 from workflow.utils.exceptions import WorkflowException
 
@@ -101,55 +96,6 @@ class Proceeding(CreatedMixin,
         unique_together = (
             # ("voucher_type", "voucher_obj_id"),
         )
-
-
-class VoucherBase(ModelBase):
-    def __new__(mcs, name, bases, attrs):
-        super_new = super().__new__
-        parents = [b for b in bases if isinstance(b, VoucherBase)]
-        if not parents:
-            return super_new(mcs, name, bases, attrs)
-
-        mod = attrs.get('__module__')
-        attr_meta = attrs.setdefault('Meta', type('Meta', (), {}))
-        abstract = getattr(attr_meta, 'abstract', False)
-
-        app_config = apps.get_containing_app_config(mod)
-        app_label = None
-        if getattr(attr_meta, 'app_label', None) is None:
-            if app_config is None:
-                if not abstract:
-                    raise RuntimeError(
-                        "Model class %s.%s doesn't declare an explicit "
-                        "app_label and isn't in an application in "
-                        "INSTALLED_APPS." % (module, name)
-                    )
-            else:
-                app_label = app_config.label
-
-        d = {"app_label": app_label,
-             "verbose_name": getattr(attr_meta, "verbose_name", name),
-             "class": name.lower()}
-
-        origin_permissions = getattr(attr_meta, "permissions", ())
-        translated_perms = ()
-        for codename, p_name in VOUCHER_PERMISSIONS:
-            translated_perms += ((codename % d, p_name % d),)
-
-        setattr(attr_meta, "permissions", tuple(chain(origin_permissions, translated_perms)))
-
-        new_class = super_new(mcs, name, bases, attrs)
-
-        if not abstract:
-            meta = new_class._meta
-            print(meta)
-            if getattr(new_class, 'verbose_name') is None:
-                raise ValueError(_("单据名称不能为空"))
-            if getattr(new_class, 'code_name') is None:
-                raise ValueError(_("单据code_name不能为空"))
-            setattr(meta, 'verbose_name', new_class.verbose_name)
-        print()
-        return new_class
 
 
 class Voucher(CreatedMixin,

@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 
 
-from workflow.models.base_model import ModifiedByMixin, CreatedByMixin, ModifiedMixin, CreatedMixin
+from workflow.models.mixin import ModifiedByMixin, CreatedByMixin, ModifiedMixin, CreatedMixin
 
 
 class Flow(CreatedMixin,
