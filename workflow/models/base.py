@@ -3,7 +3,7 @@ from itertools import chain
 from django.apps import apps
 from django.db.models.base import ModelBase
 from django.utils.translation import ugettext_lazy as _
-from workflow.utils.permissions import VOUCHER_PERMISSIONS
+from workflow.contrib.permissions import VOUCHER_PERMISSIONS
 
 
 class VoucherBase(ModelBase):

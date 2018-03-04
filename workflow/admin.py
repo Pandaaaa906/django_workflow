@@ -10,7 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 
 @admin.register(Proceeding)
 class ProceedingAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'status', 'get_voucher_id', 'get_flow_name', 'get_flow_node_name')
+    list_display = ('pk', 'status', 'get_voucher_id', 'get_flow_name', 'get_node_name')
 
     def get_voucher_id(self, obj):
         return obj.voucher_obj.cat_no
@@ -18,8 +18,8 @@ class ProceedingAdmin(admin.ModelAdmin):
     def get_flow_name(self, obj):
         return obj.flow.name
 
-    def get_flow_node_name(self, obj):
-        return obj.workflow_node.name
+    def get_node_name(self, obj):
+        return obj.node.name
 
 
 class FlowNodeInline(admin.TabularInline):

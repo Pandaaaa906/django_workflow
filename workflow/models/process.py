@@ -9,10 +9,10 @@ from django.dispatch import receiver
 from django.utils.translation import ugettext_lazy as _
 
 from workflow.models.base import VoucherBase
-from .flow import Flow, FlowNode, TransactionType
+from .flow import Flow, FlowNode
 from workflow.models.mixin import ModifiedByMixin, CreatedByMixin, ModifiedMixin, CreatedMixin
-from workflow.utils.error_code import ErrorCode
-from workflow.utils.exceptions import WorkflowException
+from workflow.contrib.error_code import ErrorCode
+from workflow.contrib.exceptions import WorkflowException
 
 
 class Proceeding(CreatedMixin,
@@ -49,36 +49,39 @@ class Proceeding(CreatedMixin,
     voucher_obj = GenericForeignKey('voucher_type', 'voucher_obj_id')
 
     flow = models.ForeignKey(Flow, on_delete=models.CASCADE)
-    workflow_node = models.ForeignKey(FlowNode, on_delete=models.CASCADE)
+    node = models.ForeignKey(FlowNode, on_delete=models.CASCADE, null=True)
 
-    # TODO 改用approve
-    def proceed(self, user, direction=TransactionType.FORWARD):
-        """进行单据"""
-        self.can_proceed(user)
-        self.workflow_node = self.next_pending_node(direction)
-        self.save()
+    # TODO 完善audit
+    def audit(self, user, _pass=True):
+        """
+        检查节点Type,
+        是否用户节点，
+        if _pass == True，
+            设self.workflow_node = self.workflow_node.next_node
+        else:
+            self.reject(user)
 
-    def next_node(self, direction=None):
-        if direction == TransactionType.FORWARD:
-            return self.workflow_node.forward_node
-        elif direction == TransactionType.BACKWARD:
-            return self.workflow_node.backward_node
+        """
+        pass
 
-    def next_pending_node(self, direction):
-        next_node = self.next_node(direction)
-        while next_node.node_type == FlowNode.SYS_TYPE:
-            # TODO fake code
-            if next_node.forward_condition:
-                next_node = next_node.forward_node
-            else:
-                next_node = next_node.backward_node
-        return next_node
+    def robot(self):
+        """
+        处理系统节点，
+
+        if proceeding_instance.node.node_type is not SYSTEM:
+            return
+        for condition in conditions:
+            if condition:
+
+        :return:
+        """
 
     def hand_over(self, user, to_user):
         self.can_proceed(user)
         self.current_user = to_user
         self.save()
 
+    # TODO 检查self.
     def can_proceed(self, user):
         if self.current_user != user:
             raise WorkflowException(error_code=ErrorCode.INVALID_NEXT_STATE_FOR_USER)
@@ -87,10 +90,11 @@ class Proceeding(CreatedMixin,
     def save(self, *args, **kwargs):
         if not self.pk:
             self.flow = self.get_active_workflow()
-            self.workflow_node = FlowNode.objects.get(flow=self.flow,
-                                                      node_type=FlowNode.START_TYPE)
+            self.node = FlowNode.objects.get(flow=self.flow,
+                                             node_type=FlowNode.START_TYPE)
         super(Proceeding, self).save(*args, **kwargs)
-        if self.workflow_node.node_type == FlowNode.END_TYPE:
+        # TODO 如果是系统节点，新建个机器人任务处理
+        if self.node.node_type == FlowNode.END_TYPE:
             self.voucher_obj.post_approval()
 
     class Meta:
@@ -164,8 +168,8 @@ class Voucher(CreatedMixin,
         else:
             raise ValueError(_("单据没有进入流程，不能撤销"))
 
-    # TODO 审核：ShortCut for Proceeding approve
-    def approve(self, user, _pass=True):
+    # TODO 审核：ShortCut for Proceeding audit
+    def audit(self, user, _pass=True):
         proceeding = self.proceeding.filter(Q(status=Proceeding.PROCESSING))[0]
 
     def get_processing_proceed(self):
