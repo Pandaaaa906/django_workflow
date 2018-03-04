@@ -9,7 +9,7 @@ from workflow.utils.permissions import VOUCHER_PERMISSIONS
 class VoucherBase(ModelBase):
     def __new__(mcs, name, bases, attrs):
         super_new = super().__new__
-        if attrs.get('post_approval', None) is None:
+        if 'post_approval' not in attrs:
             raise ValueError(_("单据没定义post_approval函数"))
         parents = [b for b in bases if isinstance(b, VoucherBase)]
         if not parents:
