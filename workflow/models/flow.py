@@ -7,7 +7,6 @@ from django.db import models
 from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 
-
 from workflow.models.mixin import ModifiedByMixin, CreatedByMixin, ModifiedMixin, CreatedMixin
 
 
@@ -28,11 +27,13 @@ class Flow(CreatedMixin,
         )
 
     def save(self, *args, **kwargs):
+        mod = __import__('workflow.models', globals(), locals())
+        Proceeding = mod.models.Proceeding
         if not self.pk:
             super(Flow, self).save(*args, **kwargs)
             FlowNode.objects.create(flow=self, name=_("开始"), node_type=FlowNode.START_TYPE)
             FlowNode.objects.create(flow=self, name=_("结束"), node_type=FlowNode.END_TYPE)
-        elif Proceeding.objects.filter(flow=type(self)):
+        elif Proceeding.objects.filter(flow=self, status=Proceeding.PROCESSING):
             raise ValueError(_("有正在进行的流程，不能修改"))
         super(Flow, self).save(*args, **kwargs)
 
@@ -64,16 +65,23 @@ class FlowNode(CreatedMixin,
     node_type = models.CharField(max_length=100, choices=NODE_TYPE)
 
     # 负责审核对象：工作组，用户
-    q_group_user = Q(app_label='auth')&(Q(model="user")|Q(model="group"))
+    q_group_user = Q(app_label='auth') & (Q(model="user") | Q(model="group"))
     approval_group_type = models.ForeignKey(ContentType,
                                             limit_choices_to=q_group_user,
                                             on_delete=models.CASCADE,
-                                            null=True)
-    approval_group_id = models.PositiveIntegerField(null=True)
+                                            null=True, blank=True, default=None)
+    approval_group_id = models.PositiveIntegerField(null=True, blank=True, default=None)
     approval_group = GenericForeignKey('approval_group_type', 'approval_group_id')
 
-    forward_node = models.ForeignKey('self', null=True, on_delete=models.CASCADE, related_name="backword")
-    backward_node = models.ForeignKey('self', null=True, on_delete=models.CASCADE, related_name="forward")
+    previous_node = models.ForeignKey('self', null=True, blank=True, default=None,
+                                      on_delete=models.CASCADE,
+                                      related_name="forward")
+
+    next_node = models.ForeignKey('self', null=True, blank=True, default=None,
+                                  on_delete=models.CASCADE,
+                                  related_name="backword")
+    def __str__(self):
+        return "/".join((self.flow.name, self.name))
 
     # 一个系统节点只判断一个条件
     '''
@@ -90,6 +98,3 @@ class FlowNode(CreatedMixin,
         unique_together = (
             ('flow', 'name'),
         )
-
-
-

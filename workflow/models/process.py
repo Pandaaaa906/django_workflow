@@ -1,5 +1,5 @@
 # coding=utf-8
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -50,18 +50,30 @@ class Proceeding(CreatedMixin,
     flow = models.ForeignKey(Flow, on_delete=models.CASCADE)
     node = models.ForeignKey(FlowNode, on_delete=models.CASCADE, null=True)
 
-    # TODO 完善audit
-    def audit(self, user, _pass=True):
-        """
-        检查节点Type,
-        是否用户节点，
-        if _pass == True，
-            设self.workflow_node = self.workflow_node.next_node
-        else:
-            self.reject(user)
+    # TODO 检查self.
+    def can_audit_by(self, user):
+        # 如果不是USER_TYPE，返回False
+        if self.node.node_type is not FlowNode.USER_TYPE:
+            return False
+        app_group = self.node.approval_group_type.model_class()
+        app_ins = self.node.approval_group
+        if app_group is Group and not user.groups.filter(name=app_ins.name).exists():
+            return False
+        elif app_group is User and app_ins is not user:
+            return False
+        return True
 
-        """
-        pass
+    # TODO 完善audit
+    def audit(self, user, _pass=True, comment=None):
+        if not self.can_audit_by(user):
+            raise ValueError(_("不能审核"))
+        if _pass:
+            print(user, "审核中")
+            self.node = self.node.next_node
+        else:
+            self.status = self.REJECTED
+        self.save(user=user)
+        # TODO 新建ProceedingLog
 
     def robot(self):
         """
@@ -76,26 +88,21 @@ class Proceeding(CreatedMixin,
         """
 
     def hand_over(self, user, to_user):
-        self.can_proceed(user)
+        self.can_audit_by(user)
         self.current_user = to_user
         self.save()
-
-    # TODO 检查self.
-    def can_proceed(self, user):
-        if self.current_user != user:
-            raise WorkflowException(error_code=ErrorCode.INVALID_NEXT_STATE_FOR_USER)
-        return True
 
     def save(self, *args, **kwargs):
         if not self.pk:
             self.flow = self.get_active_workflow()
             self.node = FlowNode.objects.get(flow=self.flow,
-                                             node_type=FlowNode.START_TYPE)
-        super(Proceeding, self).save(*args, **kwargs)
-        # TODO 如果是系统节点，新建个机器人任务处理
+                                             node_type=FlowNode.START_TYPE).next_node
         if self.node.node_type == FlowNode.END_TYPE:
             self.voucher_obj.post_approval()
             self.status = self.APPROVED
+        super(Proceeding, self).save(*args, **kwargs)
+        # TODO 如果是系统节点，新建个机器人任务处理
+
 
     class Meta:
         unique_together = (

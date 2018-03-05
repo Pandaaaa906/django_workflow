@@ -1,6 +1,7 @@
 from itertools import chain
 
 from django.apps import apps
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
 from django.db.models.base import ModelBase
 from django.utils.translation import ugettext_lazy as _
@@ -47,20 +48,29 @@ class VoucherBase(ModelBase):
         new_class = super_new(mcs, name, bases, attrs)
 
         if not abstract:
-            meta = new_class._meta
             if getattr(new_class, 'code_name') is None:
                 raise ValueError(_("单据code_name不能为空"))
-            setattr(meta, 'verbose_name', new_class.verbose_name)
         return new_class
 
 
 class VoucherInlineBase(ModelBase):
     def __new__(mcs, name, bases, attrs):
+        super_new = super().__new__
         if 'parent_voucher' not in attrs:
             raise ValueError(_("没指定父级单据"))
+        parents = [b for b in bases if isinstance(b, VoucherInlineBase)]
+        if not parents:
+            return super_new(mcs, name, bases, attrs)
+
         model = attrs.pop('parent_voucher')
-        if type(model):
+        mod = __import__('workflow.models', globals(), locals())
+
+        if not issubclass(model, mod.models.Voucher):
             raise ValueError(_("错误的父级单据类型"))
 
-        attrs["parent_voucher"] = models.ForeignKey(model)
-        attrs["parent_voucher_id"] = models.PositiveIntegerField()
+        attrs["parent_voucher"] = models.ForeignKey(model,
+                                                    verbose_name=_("单据"),
+                                                    on_delete=models.CASCADE,
+                                                    related_name="inlines")
+        new_class = super_new(mcs, name, bases, attrs)
+        return new_class

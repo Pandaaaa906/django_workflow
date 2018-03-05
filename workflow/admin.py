@@ -13,7 +13,7 @@ class ProceedingAdmin(admin.ModelAdmin):
     list_display = ('pk', 'status', 'get_voucher_id', 'get_flow_name', 'get_node_name')
 
     def get_voucher_id(self, obj):
-        return obj.voucher_obj.cat_no
+        return obj.voucher_obj.code_name
 
     def get_flow_name(self, obj):
         return obj.flow.name
@@ -24,7 +24,7 @@ class ProceedingAdmin(admin.ModelAdmin):
 
 class FlowNodeInline(admin.TabularInline):
     model = FlowNode
-    extra = 1
+    extra = 0
     formfield_overrides = {
         models.CharField: {'widget': TextInput(attrs={'size': '20'})},
         models.TextField: {'widget': Textarea(attrs={'rows': 3, 'cols': 20})},

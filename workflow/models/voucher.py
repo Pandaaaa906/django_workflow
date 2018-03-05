@@ -4,7 +4,7 @@ from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 
 from workflow.models import CreatedMixin, ModifiedMixin, CreatedByMixin, ModifiedByMixin, Proceeding
-from workflow.models.base import VoucherBase
+from workflow.models.base import VoucherBase, VoucherInlineBase
 
 
 class Voucher(CreatedMixin,
@@ -59,7 +59,7 @@ class Voucher(CreatedMixin,
 
     def can_retract(self):
         """只有PROCESSING,REJECTED,可以撤回"""
-        if self.proceeding.filter(Q(status=Proceeding.PROCESSING)|Q(status=Proceeding.REJECTED)).exists():
+        if self.proceeding.filter(Q(status=Proceeding.PROCESSING) | Q(status=Proceeding.REJECTED)).exists():
             return True
         else:
             return False
@@ -81,3 +81,15 @@ class Voucher(CreatedMixin,
     def save_submit(self, user):
         self.save(user=user)
         self.submit(user=user)
+
+
+class VoucherInline(CreatedMixin,
+                    ModifiedMixin,
+                    CreatedByMixin,
+                    ModifiedByMixin,
+                    models.Model,
+                    metaclass=VoucherInlineBase):
+    parent_voucher = None
+
+    class Meta:
+        abstract = True
