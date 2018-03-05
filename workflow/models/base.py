@@ -47,8 +47,6 @@ class VoucherBase(ModelBase):
 
         if not abstract:
             meta = new_class._meta
-            if getattr(new_class, 'verbose_name') is None:
-                raise ValueError(_("单据名称不能为空"))
             if getattr(new_class, 'code_name') is None:
                 raise ValueError(_("单据code_name不能为空"))
             setattr(meta, 'verbose_name', new_class.verbose_name)

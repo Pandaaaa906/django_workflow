@@ -12,6 +12,17 @@ class InquiryAdmin(admin.ModelAdmin):
     actions = ('submit', 'retract')
     search_fields = ('cat_no', 'name', 'cas', 'pk', 'proceeding__status', 'created_by__username')
 
+    def save_model(self, request, obj, form, change):
+        is_new = False
+        if not obj.pk:
+            is_new = True
+        super().save_model(request, obj, form, change)
+        if is_new:
+            obj.created_by = request.user
+        obj.modified_by = request.user
+        obj.save()
+
+
     def retract(self, request, queryset):
         for obj in queryset:
             obj.retract(user=request.user)
