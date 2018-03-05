@@ -1,6 +1,7 @@
 from itertools import chain
 
 from django.apps import apps
+from django.db import models
 from django.db.models.base import ModelBase
 from django.utils.translation import ugettext_lazy as _
 from workflow.contrib.permissions import VOUCHER_PERMISSIONS
@@ -51,3 +52,15 @@ class VoucherBase(ModelBase):
                 raise ValueError(_("单据code_name不能为空"))
             setattr(meta, 'verbose_name', new_class.verbose_name)
         return new_class
+
+
+class VoucherInlineBase(ModelBase):
+    def __new__(mcs, name, bases, attrs):
+        if 'parent_voucher' not in attrs:
+            raise ValueError(_("没指定父级单据"))
+        model = attrs.pop('parent_voucher')
+        if type(model):
+            raise ValueError(_("错误的父级单据类型"))
+
+        attrs["parent_voucher"] = models.ForeignKey(model)
+        attrs["parent_voucher_id"] = models.PositiveIntegerField()
