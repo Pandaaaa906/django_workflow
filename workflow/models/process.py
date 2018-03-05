@@ -53,13 +53,16 @@ class Proceeding(CreatedMixin,
     # TODO 检查self.
     def can_audit_by(self, user):
         # 如果不是USER_TYPE，返回False
-        if self.node.node_type is not FlowNode.USER_TYPE:
+        if self.node.node_type != FlowNode.USER_TYPE:
+            print("节点类型不是用户类型")
             return False
         app_group = self.node.approval_group_type.model_class()
         app_ins = self.node.approval_group
         if app_group is Group and not user.groups.filter(name=app_ins.name).exists():
+            print("节点组里没有该用户")
             return False
         elif app_group is User and app_ins is not user:
+            print("节点用户不是该用户")
             return False
         return True
 

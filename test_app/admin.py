@@ -24,6 +24,7 @@ class FlowNodeInline(SmallTextArea, admin.TabularInline):
 
 class VoucherAdmin(SmallTextArea, admin.ModelAdmin):
     actions = ('submit', 'retract', 'audit')
+    list_display = ('get_proceeding_status', 'get_created_by')
 
     def save_model(self, request, obj, form, change):
         is_new = False
@@ -54,6 +55,13 @@ class VoucherAdmin(SmallTextArea, admin.ModelAdmin):
             result = l_result[0].status
         return result
 
+    def get_node_name(self, obj):
+        l_result = obj.proceeding.filter().order_by('-created')
+        result = None
+        if l_result:
+            result = l_result[0].node.name
+        return result
+
     def get_created_by(self, obj):
         return getattr(obj.created_by, 'username', None)
 
@@ -63,8 +71,7 @@ class VoucherAdmin(SmallTextArea, admin.ModelAdmin):
 
 @admin.register(Inquiry)
 class InquiryAdmin(VoucherAdmin, admin.ModelAdmin):
-    list_display = ('pk', 'get_customer', 'get_sales_name',
-                    'get_proceeding_status', 'get_created_by')
+    list_display = ('pk', 'get_customer', 'get_sales_name', 'get_proceeding_status','get_node_name', 'get_created_by')
 
     inlines = [FlowNodeInline, ]
     search_fields = ('cat_no', 'name', 'cas', 'pk', 'proceeding__status', 'created_by__username')
