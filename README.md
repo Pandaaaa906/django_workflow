@@ -4,9 +4,19 @@
 
 This is a workflow project can be use in building an ERP using django.
 
-To define a voucher, like a Inquiry in the example_app:
+To define some vouchers, like Inquiry and Quotation in the example_app:
 ```python
-from workflow import Voucher
+from django.db import models
+from workflow import Voucher, VoucherInline, Branch
+
+# If some model which could be another voucher have source item
+class Quotation(Voucher, Branch):
+    some = models.TextField()
+    log = models.TextField()
+
+    def post_approval(self):
+        maybe_create_another_voucher()
+
 
 class Inquiry(Voucher):
     some = models.TextField()
@@ -19,17 +29,12 @@ class Inquiry(Voucher):
         for obj in self.inlines:
             Quotation.objects.create(source_obj=obj)
 
+
 # If a Voucher have inlines, define an inline model like this:
-class Inquiry(VoucherInline):
+class InquiryInline(VoucherInline):
     parent_voucher = Inquiry
 
     details = models.TextField()
 
-# if some model which could be another voucher have source item
-class Quotation(Voucher, Branch):
-    some = models.TextField()
-    log = models.TextField()
 
-    def post_approval(self):
-        maybe_create_another_voucher()
 ```
