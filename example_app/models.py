@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 # Create your models here.
-from workflow.models import Voucher, VoucherInline
+from workflow.models import Voucher, VoucherInline, Branch
 
 
 class MyVoucher(Voucher):
@@ -15,6 +15,14 @@ class MyVoucher(Voucher):
 
     class Meta:
         verbose_name = _("测试单据")
+
+    def post_approval(self):
+        pass
+
+
+class Quotation(Voucher, Branch):
+    code_name = "QO"
+    product_cat_no = models.TextField()
 
     def post_approval(self):
         pass
@@ -33,7 +41,8 @@ class Inquiry(Voucher):
         verbose_name = _("询单")
 
     def post_approval(self):
-        pass
+        for obj in self.inlines.all():
+            Quotation.objects.create(source_obj=obj)
 
 
 class InquiryInline(VoucherInline):
@@ -64,5 +73,3 @@ class InquiryInline(VoucherInline):
 
     class Meta:
         verbose_name = _("询单内联")
-
-

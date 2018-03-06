@@ -21,6 +21,9 @@ class ProceedingAdmin(admin.ModelAdmin):
     def get_node_name(self, obj):
         return getattr(obj.node, 'name', None)
 
+    class Media:
+        js = ("https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/4.2.1/jsoneditor.js",)
+
 
 class FlowNodeInline(admin.TabularInline):
     model = FlowNode

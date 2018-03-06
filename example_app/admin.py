@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.db import models
 from django.forms import TextInput, Textarea
 
-from test_app.models import Inquiry, MyVoucher, InquiryInline
+from example_app.models import Inquiry, MyVoucher, InquiryInline, Quotation
 from django.utils.translation import ugettext_lazy as _
 
 from workflow.models import Proceeding
@@ -19,7 +19,7 @@ class SmallTextArea(object):
 
 class FlowNodeInline(SmallTextArea, admin.TabularInline):
     model = InquiryInline
-    extra = 1
+    extra = 0
 
 
 class VoucherAdmin(SmallTextArea, admin.ModelAdmin):
@@ -94,3 +94,11 @@ class InquiryAdmin(VoucherAdmin, admin.ModelAdmin):
 class MyVoucherAdmin(VoucherAdmin, admin.ModelAdmin):
     list_display = ('pk', 'to', 'want_to', 'before',
                     'get_proceeding_status', 'get_created_by')
+
+
+@admin.register(Quotation)
+class QuotationAdmin(VoucherAdmin):
+    list_display = ('pk', 'product_cat_no', 'get_inquiry_cat_no', 'get_proceeding_status')
+
+    def get_inquiry_cat_no(self, obj):
+        return obj.source_obj.cat_no

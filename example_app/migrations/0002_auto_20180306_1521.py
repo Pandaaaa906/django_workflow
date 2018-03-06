@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('test_app', '0001_initial'),
+        ('example_app', '0001_initial'),
     ]
 
     operations = [
@@ -97,6 +97,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='inquiryinline',
             name='parent_voucher',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='inlines', to='test_app.Inquiry', verbose_name='单据'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='inlines', to='example_app.Inquiry', verbose_name='单据'),
         ),
     ]

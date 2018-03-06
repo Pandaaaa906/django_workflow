@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_extensions',
     'workflow',
-    'test_app',
+    'example_app',
 ]
 
 MIDDLEWARE = [

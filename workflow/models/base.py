@@ -1,7 +1,6 @@
 from itertools import chain
 
 from django.apps import apps
-from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
 from django.db.models.base import ModelBase
 from django.utils.translation import ugettext_lazy as _
@@ -74,3 +73,15 @@ class VoucherInlineBase(ModelBase):
                                                     related_name="inlines")
         new_class = super_new(mcs, name, bases, attrs)
         return new_class
+
+'''
+class BranchBase(ModelBase):
+    def __new__(mcs, name, bases, attrs):
+        super_new = super().__new__
+        parents = [b for b in bases if isinstance(b, VoucherInlineBase)]
+        if not parents:
+            return super_new(mcs, name, bases, attrs)
+        attrs['source_type'] = models.ForeignKey(ContentType, null=True, default=None, blank=True)
+        attrs['source_id'] = models.PositiveIntegerField(null=True, default=None, blank=True)
+        return super_new(mcs, name, bases, attrs)
+'''
