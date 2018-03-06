@@ -10,8 +10,6 @@ from django.utils.translation import ugettext_lazy as _
 
 from .flow import Flow, FlowNode
 from workflow.models.mixin import ModifiedByMixin, CreatedByMixin, ModifiedMixin, CreatedMixin
-from workflow.contrib.error_code import ErrorCode
-from workflow.contrib.exceptions import WorkflowException
 
 
 class Proceeding(CreatedMixin,

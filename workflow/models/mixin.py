@@ -38,7 +38,7 @@ class CreatedByMixin(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.pk:
-            self.created_by = kwargs.pop('user', None)
+            self.created_by = self.created_by or kwargs.pop('user', None)
         super(CreatedByMixin, self).save(*args, **kwargs)
 
     class Meta:
@@ -53,7 +53,7 @@ class ModifiedByMixin(models.Model):
                                     related_name="%(app_label)s_%(class)s_modified")
 
     def save(self, *args, **kwargs):
-        self.modified_by = kwargs.pop('user', None)
+        self.modified_by = self.modified_by or kwargs.pop('user', None)
         super(ModifiedByMixin, self).save(*args, **kwargs)
 
     class Meta:

@@ -80,6 +80,7 @@ class FlowNode(CreatedMixin,
     next_node = models.ForeignKey('self', null=True, blank=True, default=None,
                                   on_delete=models.CASCADE,
                                   related_name="backword")
+
     def __str__(self):
         return "/".join((self.flow.name, self.name))
 
@@ -91,8 +92,8 @@ class FlowNode(CreatedMixin,
                         'operator': 'lt',  # lt, le, gt, ge, eq, ne
                         }
     '''
-    forward_condition = JSONField(null=True, blank=True,
-                                  default={'attr': None, 'type': None, 'value': None, 'operator': None})
+    condition = JSONField(null=True, blank=True,
+                          default={'attr': None, 'type': None, 'value': None, 'operator': None})
 
     class Meta:
         unique_together = (

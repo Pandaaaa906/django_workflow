@@ -16,10 +16,10 @@ class ProceedingAdmin(admin.ModelAdmin):
         return obj.voucher_obj.code_name
 
     def get_flow_name(self, obj):
-        return obj.flow.name
+        return getattr(obj.flow, 'name', None)
 
     def get_node_name(self, obj):
-        return obj.node.name
+        return getattr(obj.node, 'name', None)
 
 
 class FlowNodeInline(admin.TabularInline):
@@ -49,6 +49,12 @@ class FlowAdmin(admin.ModelAdmin):
         }]
 
     )
+
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            obj.created_by = request.user
+        obj.modified_by = request.user
+        super().save_model(request, obj, form, change)
 
     def get_len_nodes(self, obj):
         return FlowNode.objects.filter(flow=obj).count()

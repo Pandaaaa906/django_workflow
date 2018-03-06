@@ -43,7 +43,7 @@ class InquiryInline(VoucherInline):
     UNIT_KG = "kg"
     UNIT_G = "g"
     UNIT_ML = "ml"
-    UTNI_UL = "ul"
+    UTIT_UL = "ul"
     UNIT_L = 'L'
 
     UNIT_CHOICES = {
@@ -51,7 +51,7 @@ class InquiryInline(VoucherInline):
         (UNIT_KG, "kg"),
         (UNIT_G, "g"),
         (UNIT_ML, "ml"),
-        (UTNI_UL, "ul"),
+        (UTIT_UL, "ul"),
         (UNIT_L, 'L'),
     }
 
@@ -64,4 +64,5 @@ class InquiryInline(VoucherInline):
 
     class Meta:
         verbose_name = _("询单内联")
+
 

@@ -27,14 +27,10 @@ class VoucherAdmin(SmallTextArea, admin.ModelAdmin):
     list_display = ('get_proceeding_status', 'get_created_by')
 
     def save_model(self, request, obj, form, change):
-        is_new = False
         if not obj.pk:
-            is_new = True
-        super().save_model(request, obj, form, change)
-        if is_new:
             obj.created_by = request.user
         obj.modified_by = request.user
-        obj.save()
+        super().save_model(request, obj, form, change)
 
     def retract(self, request, queryset):
         for obj in queryset:
@@ -59,7 +55,7 @@ class VoucherAdmin(SmallTextArea, admin.ModelAdmin):
         l_result = obj.proceeding.filter().order_by('-created')
         result = None
         if l_result:
-            result = l_result[0].node.name
+            result = getattr(l_result[0].node, 'name', None)
         return result
 
     def get_created_by(self, obj):
