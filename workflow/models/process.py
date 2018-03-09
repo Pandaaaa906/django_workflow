@@ -41,12 +41,12 @@ class Proceeding(CreatedMixin,
     )
     status = models.CharField(verbose_name=_("状态"), choices=STATUS, default=PROCESSING, max_length=100)
 
-    voucher_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    voucher_type = models.ForeignKey(ContentType, on_delete=models.PROTECT)
     voucher_obj_id = models.PositiveIntegerField()
     voucher_obj = GenericForeignKey('voucher_type', 'voucher_obj_id')
 
-    flow = models.ForeignKey(Flow, on_delete=models.CASCADE)
-    node = models.ForeignKey(FlowNode, on_delete=models.CASCADE, null=True)
+    flow = models.ForeignKey(Flow, on_delete=models.PROTECT)
+    node = models.ForeignKey(FlowNode, on_delete=models.PROTECT, null=True)
 
     # TODO 检查self.
     def can_audit_by(self, user):

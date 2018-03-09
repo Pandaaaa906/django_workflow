@@ -17,7 +17,7 @@ class Flow(CreatedMixin,
            models.Model):
     name = models.TextField()
     in_use = models.BooleanField(default=False)
-    process_obj = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    process_obj = models.ForeignKey(ContentType, on_delete=models.PROTECT)
 
     copy_to = models.ManyToManyField(User, verbose_name=_("抄送"))
 
@@ -59,7 +59,7 @@ class FlowNode(CreatedMixin,
         (USER_TYPE, _("用户节点")),
         (SYS_TYPE, _("系统节点")),
     )
-    flow = models.ForeignKey(Flow, on_delete=models.CASCADE, db_column='flow_id')
+    flow = models.ForeignKey(Flow, on_delete=models.PROTECT, db_column='flow_id')
     name = models.TextField(null=True)
     prompt = models.TextField(null=True, blank=True)
     node_type = models.CharField(max_length=100, choices=NODE_TYPE)
@@ -68,17 +68,17 @@ class FlowNode(CreatedMixin,
     q_group_user = Q(app_label='auth') & (Q(model="user") | Q(model="group"))
     approval_group_type = models.ForeignKey(ContentType,
                                             limit_choices_to=q_group_user,
-                                            on_delete=models.CASCADE,
+                                            on_delete=models.PROTECT,
                                             null=True, blank=True, default=None)
     approval_group_id = models.PositiveIntegerField(null=True, blank=True, default=None)
     approval_group = GenericForeignKey('approval_group_type', 'approval_group_id')
 
     previous_node = models.ForeignKey('self', null=True, blank=True, default=None,
-                                      on_delete=models.CASCADE,
+                                      on_delete=models.PROTECT,
                                       related_name="forward")
 
     next_node = models.ForeignKey('self', null=True, blank=True, default=None,
-                                  on_delete=models.CASCADE,
+                                  on_delete=models.PROTECT,
                                   related_name="backword")
 
     def __str__(self):

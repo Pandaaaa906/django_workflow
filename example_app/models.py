@@ -27,6 +27,9 @@ class Quotation(Voucher, Branch):
     def post_approval(self):
         pass
 
+    class Meta:
+        verbose_name = _("报价列表")
+
 
 class Inquiry(Voucher):
     code_name = "IO"

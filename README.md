@@ -36,5 +36,4 @@ class InquiryInline(VoucherInline):
 
     details = models.TextField()
 
-
 ```
