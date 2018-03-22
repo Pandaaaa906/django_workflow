@@ -22,6 +22,7 @@ class Voucher(CreatedMixin,
     code_name = None
     # auto added if it has connected inlines
     inlines = None
+    # TODO 改用Manager做?这里修改为proceedings
     proceeding = GenericRelation(Proceeding,
                                  verbose_name=_("流程"),
                                  content_type_field="voucher_type",

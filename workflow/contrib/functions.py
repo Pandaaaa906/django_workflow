@@ -24,13 +24,15 @@ def get_keys_from_model(model, max_depth=1, **kwargs):
     for field in l_fields:
         if isinstance(field, (ManyToOneRel, ForeignKey, ManyToManyRel, GenericForeignKey, GenericRelation)):
             if isinstance(field, (ManyToOneRel, ManyToManyRel)):
+                print('a', field)
                 _model = field.field.model
                 _field_name = field.field.name
             else:
+                print('b', field)
                 _model = field.related_model
                 _field_name = field.name
             if _model is None:
-                print(field)
+                continue
             _model_verbose_name = _model._meta.verbose_name.title()
             if _name_prefix:
                 name_prefix = LOOKUP_SEP.join((_name_prefix, field.name))
@@ -49,15 +51,13 @@ def get_keys_from_model(model, max_depth=1, **kwargs):
                                          last_field_name=_field_name):
                 yield i
         else:
-            _model_verbose_name = str(model._meta.verbose_name)
+            # _model_verbose_name = verbose_name_prefix or str(model._meta.verbose_name)
             if _name_prefix:
                 key = LOOKUP_SEP.join((_name_prefix, field.name))
             else:
                 key = field.name
-            if verbose_name_prefix:
-                value = f"{verbose_name_prefix}'s {field.verbose_name.title()}"
-            else:
-                value = f"{_model_verbose_name}'s {field.verbose_name.title()}"
+
+            value = f"{_name_prefix.title()}'s {field.verbose_name.title()}"
 
             yield (key, value)
 
