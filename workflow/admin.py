@@ -1,3 +1,4 @@
+from annoying.fields import JSONField
 from django.contrib import admin
 
 # Register your models here.
@@ -24,6 +25,9 @@ class ProceedingAdmin(admin.ModelAdmin):
     class Media:
         js = ("https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/4.2.1/jsoneditor.js",)
 
+class JSONWidget(Textarea):
+    pass
+
 
 class FlowNodeInline(admin.TabularInline):
     model = FlowNode
@@ -31,6 +35,7 @@ class FlowNodeInline(admin.TabularInline):
     formfield_overrides = {
         models.CharField: {'widget': TextInput(attrs={'size': '20'})},
         models.TextField: {'widget': Textarea(attrs={'rows': 3, 'cols': 20})},
+        JSONField: {'widget': Textarea(attrs={'rows': 3, 'cols': 20})}
     }
 
 
@@ -44,7 +49,7 @@ class FlowAdmin(admin.ModelAdmin):
     }
     fieldsets = (
         [None, {
-            'fields': ('name', 'process_obj', 'in_use'),
+            'fields': ('name', 'voucher_type', 'in_use'),
         }],
         ['Node', {
             'classes': ('collapse',),

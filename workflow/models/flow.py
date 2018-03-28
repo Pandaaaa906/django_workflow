@@ -6,7 +6,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
-
 from workflow.models.mixin import ModifiedByMixin, CreatedByMixin, ModifiedMixin, CreatedMixin
 
 
@@ -17,14 +16,17 @@ class Flow(CreatedMixin,
            models.Model):
     name = models.TextField()
     in_use = models.BooleanField(default=False)
-    process_obj = models.ForeignKey(ContentType, on_delete=models.PROTECT)
+    voucher_type = models.ForeignKey(ContentType, on_delete=models.PROTECT)
 
     copy_to = models.ManyToManyField(User, verbose_name=_("抄送"))
 
     class Meta:
         unique_together = (
-            ("process_obj", "in_use"),
+            ("voucher_type", "in_use"),
         )
+
+    def __str__(self):
+        return self.name
 
     def save(self, *args, **kwargs):
         mod = __import__('workflow.models', globals(), locals())
@@ -41,6 +43,16 @@ class Flow(CreatedMixin,
 class TransactionType:
     FORWARD = 0
     BACKWARD = 2
+
+
+class CustomJSONField(JSONField):
+    def get_prep_value(self, value):
+        if isinstance(value, str):
+            try:
+                value = self.deserializer(value)
+                return super().get_prep_value(value)
+            except:
+                return super().get_prep_value(value)
 
 
 # TODO flow direction: forward, backward
@@ -85,17 +97,20 @@ class FlowNode(CreatedMixin,
         return "/".join((self.flow.name, self.name))
 
     # 一个系统节点只判断一个条件
-    '''
-    forward_condition = {'attr': 'fk1__fk2__fk3__attr1',
-                        'type': 'int',
-                        'value': 500,
-                        'operator': 'lt',  # lt, le, gt, ge, eq, ne
-                        }
-    '''
-    condition = JSONField(null=True, blank=True,
-                          default={'attr': None, 'type': None, 'value': None, 'operator': None})
+
+    DEFAULT_CONDITION = {"field": None,  # 'fk1__fk2__fk3__attr1',
+                         "type": None,  # 'int',
+                         "value": None,  # 500,
+                         "operator": None,  # 'lt',  # lt, le, gt, ge, eq, ne
+                         "positive_node_id": None,
+                         "negative_node_id": None,
+                         }
+
+    condition = CustomJSONField(null=True, blank=True,
+                                default=DEFAULT_CONDITION)
 
     class Meta:
         unique_together = (
             ('flow', 'name'),
         )
+        ordering = ['flow', 'name']

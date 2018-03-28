@@ -26,7 +26,7 @@ class Proceeding(CreatedMixin,
     def get_active_workflow(self):
         try:
             flow = Flow.objects.get(in_use=True,
-                                    process_obj=self.voucher_type,
+                                    voucher_type=self.voucher_type,
                                     )
         except Flow.DoesNotExist:
             raise ValueError("单据没有对应流程")

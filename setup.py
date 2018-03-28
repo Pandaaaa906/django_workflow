@@ -3,8 +3,7 @@ from distutils.core import setup
 setup(
     name='django_workflow',
     version='0.1',
-    packages=['example_app', 'example_app.migrations', 'workflow', 'workflow.models', 'workflow.contrib',
-              'workflow.migrations', 'django_workflow_test'],
+    packages=['workflow', 'workflow.models', 'workflow.contrib', 'workflow.migrations'],
     url='https://github.com/Pandaaaa906/django_workflow/',
     license='',
     author='panda.ye',

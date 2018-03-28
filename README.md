@@ -32,6 +32,7 @@ class Inquiry(Voucher):
 
 # If a Voucher have inlines, define an inline model like this:
 class InquiryInline(VoucherInline):
+    # VoucherInline objects have to have parent_voucher
     parent_voucher = Inquiry
 
     details = models.TextField()
