@@ -18,7 +18,7 @@ class Flow(CreatedMixin,
     in_use = models.BooleanField(default=False)
     voucher_type = models.ForeignKey(ContentType, on_delete=models.PROTECT)
 
-    copy_to = models.ManyToManyField(User, verbose_name=_("抄送"))
+    copy_to = models.ManyToManyField(User, verbose_name=_("抄送"), null=True, blank=True, default=None)
 
     class Meta:
         unique_together = (
