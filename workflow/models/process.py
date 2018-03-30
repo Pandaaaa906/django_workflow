@@ -104,6 +104,9 @@ class Proceeding(CreatedMixin,
         super(Proceeding, self).save(*args, **kwargs)
         # TODO 如果是系统节点，新建个机器人任务处理
 
+    def delete(self, using=None, keep_parents=False):
+        if self.pk:
+            raise ValueError(_("Can't delete a proceeding instance "))
 
     class Meta:
         unique_together = (

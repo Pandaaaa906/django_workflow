@@ -29,12 +29,12 @@ class Voucher(CreatedMixin,
                                   limit_choices_to=~Q(status=Proceeding.RETRACTED))
 
     def save(self, *args, **kwargs):
-        if self.pk and self.is_editable():
+        if self.pk and self.is_immutable():
             raise ValueError("单据已提交，不能修改")
         super(Voucher, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        if self.is_editable():
+        if self.is_immutable():
             raise ValueError(_("单据已提交，不能删除"))
         super(Voucher, self).delete(*args, **kwargs)
 
@@ -48,7 +48,7 @@ class Voucher(CreatedMixin,
         if not self.pk:
             raise ValueError(_("单据未保存不能提交"))
         # 如果单据已经提交，报错
-        if self.is_editable():
+        if self.is_immutable():
             raise ValueError(_("已提交单据不能提交"))
         Proceeding.objects.create(voucher_obj=self, created_by=user)
 
@@ -67,7 +67,7 @@ class Voucher(CreatedMixin,
         self.save(user=user)
         self.submit(user=user)
 
-    def is_editable(self):
+    def is_immutable(self):
         return getattr(self.proceeding, "status", None) in (Proceeding.PROCESSING,
                                                             Proceeding.REJECTED,
                                                             Proceeding.APPROVED,
@@ -106,9 +106,13 @@ class VoucherInline(CreatedMixin,
         abstract = True
 
     def save(self, *args, **kwargs):
-        if self.parent_voucher.is_processing():
+        if self.parent_voucher.is_immutable():
             raise ValueError(_("所属单据流程进行中不能修改"))
         super(VoucherInline, self).save(*args, **kwargs)
+
+    def delete(self, using=None, keep_parents=False):
+        if self.pk and self.parent_voucher.is_immutable():
+            raise ValueError(_("所属单据流程进行中不能删除"))
 
 
 class Branch(models.Model):
