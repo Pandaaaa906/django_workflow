@@ -22,26 +22,19 @@ class Voucher(CreatedMixin,
     code_name = None
     # auto added if it has connected inlines
     inlines = None
-    # TODO 改用Manager做?这里修改为proceedings
-    proceeding = GenericRelation(Proceeding,
-                                 verbose_name=_("流程"),
-                                 content_type_field="voucher_type",
-                                 object_id_field="voucher_obj_id",
-                                 limit_choices_to=~Q(status=Proceeding.RETRACTED))
-
-    def has_unretracted_process(self):
-        if self.proceeding.filter(~Q(status=Proceeding.RETRACTED)).exists():
-            return True
-        else:
-            return False
+    proceedings = GenericRelation(Proceeding,
+                                  verbose_name=_("流程"),
+                                  content_type_field="voucher_type",
+                                  object_id_field="voucher_obj_id",
+                                  limit_choices_to=~Q(status=Proceeding.RETRACTED))
 
     def save(self, *args, **kwargs):
-        if self.pk and self.has_unretracted_process():
+        if self.pk and self.is_editable():
             raise ValueError("单据已提交，不能修改")
         super(Voucher, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        if self.has_unretracted_process():
+        if self.is_editable():
             raise ValueError(_("单据已提交，不能删除"))
         super(Voucher, self).delete(*args, **kwargs)
 
@@ -55,40 +48,50 @@ class Voucher(CreatedMixin,
         if not self.pk:
             raise ValueError(_("单据未保存不能提交"))
         # 如果单据已经提交，报错
-        # TODO 审核不通过后
-        if self.has_unretracted_process():
+        if self.is_editable():
             raise ValueError(_("已提交单据不能提交"))
         Proceeding.objects.create(voucher_obj=self, created_by=user)
-
-    def can_retract(self):
-        """只有PROCESSING,REJECTED,可以撤回"""
-        if self.proceeding.filter(Q(status=Proceeding.PROCESSING) | Q(status=Proceeding.REJECTED)).exists():
-            return True
-        else:
-            return False
 
     def retract(self, user=None):
         """撤回，将Proceedings.status设为撤销状态，被审核不通过可以撤回"""
         if self.can_retract():
-            self.proceeding.update(status=Proceeding.RETRACTED, modified_by=user, node=None)
+            self.proceedings.update(status=Proceeding.RETRACTED, modified_by=user, node=None)
         else:
-            raise ValueError(_("单据没有进入流程，不能撤销"))
+            raise ValueError(_("单据不能撤销"))
 
     # TODO 审核：ShortCut for Proceeding audit
     def audit(self, user, _pass=True):
-        proceeding = self.proceeding.filter(Q(status=Proceeding.PROCESSING))[0]
-
-    def get_processing_proceed(self):
-        return self.proceeding.filter(Q(status=Proceeding.PROCESSING))[0]
+        proceeding = self.proceedings.filter(Q(status=Proceeding.PROCESSING))[0]
 
     def save_submit(self, user):
         self.save(user=user)
         self.submit(user=user)
 
+    def is_editable(self):
+        return getattr(self.proceeding, "status", None) in (Proceeding.PROCESSING,
+                                                            Proceeding.REJECTED,
+                                                            Proceeding.APPROVED,
+                                                            Proceeding.CLOSED)
+
+    def can_retract(self):
+        """只有PROCESSING,REJECTED,可以撤回"""
+        return getattr(self.proceeding, "status", None) in (Proceeding.PROCESSING, Proceeding.REJECTED)
+
     def is_processing(self):
-        if self.proceeding.filter(status=Proceeding.PROCESSING).exists():
-            return True
-        return False
+        return getattr(self.proceeding, "status", None) == Proceeding.PROCESSING
+
+    def is_finished(self):
+        return getattr(self.proceeding, "status", None) in (Proceeding.REJECTED, Proceeding.APPROVED, Proceeding.CLOSED)
+
+    def can_submit(self):
+        return getattr(self.proceeding, "status", None) in (Proceeding.RETRACTED, None)
+
+    @property
+    def proceeding(self):
+        try:
+            return self.proceedings.latest('created')
+        except Proceeding.DoesNotExist:
+            return None
 
 
 class VoucherInline(CreatedMixin,
