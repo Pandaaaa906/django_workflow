@@ -48,10 +48,7 @@ class VoucherBase(ModelBase):
                 translated_perms += ((codename % d, p_name % d),)
             setattr(attr_meta, "permissions", tuple(chain(origin_permissions, translated_perms)))
 
-        attr_meta = attrs.setdefault('Meta', type('Meta', (), {}))
-        branches = getattr(attr_meta, "branches", [])
-        if hasattr(attr_meta, "branches"):
-            delattr(attr_meta, "branches")
+        branches = attrs.setdefault("branches", [])
         for branch in branches:
             assert issubclass(branch, models.Model)
             model_name = branch._meta.model_name
@@ -96,9 +93,7 @@ class VoucherInlineBase(ModelBase):
                                                     on_delete=models.CASCADE,
                                                     related_name="inlines")
         attr_meta = attrs.setdefault('Meta', type('Meta', (), {}))
-        branches = getattr(attr_meta, "branches", [])
-        if hasattr(attr_meta, "branches"):
-            delattr(attr_meta, "branches")
+        branches = attrs.setdefault("branches", [])
         for branch in branches:
             assert issubclass(branch, models.Model)
             model_name = branch._meta.model_name

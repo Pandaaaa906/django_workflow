@@ -50,6 +50,7 @@ class Inquiry(Voucher):
 
 class InquiryInline(VoucherInline):
     parent_voucher = Inquiry
+    branches = [Quotation, ]
 
     UNIT_MG = "mg"
     UNIT_KG = "kg"
@@ -76,4 +77,4 @@ class InquiryInline(VoucherInline):
 
     class Meta:
         verbose_name = _("询单内联")
-        branches = [Quotation, ]
+

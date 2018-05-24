@@ -74,7 +74,6 @@ class InquiryAdmin(VoucherAdmin, admin.ModelAdmin):
             'classes': ('collapse',),
             'fields': (),
         }]
-
     )
 
     def get_sales_name(self, obj):
