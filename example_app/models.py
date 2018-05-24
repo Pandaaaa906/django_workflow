@@ -76,3 +76,4 @@ class InquiryInline(VoucherInline):
 
     class Meta:
         verbose_name = _("询单内联")
+        branches = [Quotation, ]

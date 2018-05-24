@@ -116,9 +116,6 @@ class VoucherInline(CreatedMixin,
 
 
 class Branch(models.Model):
-    source_type = models.ForeignKey(ContentType, default=None, null=True, blank=True, on_delete=models.CASCADE)
-    source_id = models.PositiveIntegerField(default=None, null=True, blank=True)
-    source_obj = GenericForeignKey('source_type', 'source_id')
 
     class Meta:
         abstract = True

@@ -1,10 +1,14 @@
 from itertools import chain
 
 from django.apps import apps
+from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models.base import ModelBase
 from django.utils.translation import ugettext_lazy as _
+
 from workflow.contrib.permissions import VOUCHER_PERMISSIONS
+
 
 
 class VoucherBase(ModelBase):
@@ -44,6 +48,26 @@ class VoucherBase(ModelBase):
                 translated_perms += ((codename % d, p_name % d),)
             setattr(attr_meta, "permissions", tuple(chain(origin_permissions, translated_perms)))
 
+        attr_meta = attrs.setdefault('Meta', type('Meta', (), {}))
+        branches = getattr(attr_meta, "branches", [])
+        if hasattr(attr_meta, "branches"):
+            delattr(attr_meta, "branches")
+        for branch in branches:
+            assert issubclass(branch, models.Model)
+            model_name = branch._meta.model_name
+            attrs[model_name] = GenericRelation(branch,
+                                                object_id_field="source_id",
+                                                content_type_field="source_type",
+                                                related_query_name=name.lower())
+
+            source_type = models.ForeignKey(ContentType, default=None, null=True, blank=True, on_delete=models.CASCADE)
+            source_id = models.PositiveIntegerField(default=None, null=True, blank=True)
+            source_obj = GenericForeignKey(ct_field="source_type", fk_field="source_id")
+
+            source_type.contribute_to_class(branch, name="source_type")
+            source_id.contribute_to_class(branch, name="source_id")
+            source_obj.contribute_to_class(branch, name="source_obj")
+
         new_class = super_new(mcs, name, bases, attrs)
 
         if not abstract:
@@ -71,8 +95,28 @@ class VoucherInlineBase(ModelBase):
                                                     verbose_name=_("单据"),
                                                     on_delete=models.CASCADE,
                                                     related_name="inlines")
+        attr_meta = attrs.setdefault('Meta', type('Meta', (), {}))
+        branches = getattr(attr_meta, "branches", [])
+        if hasattr(attr_meta, "branches"):
+            delattr(attr_meta, "branches")
+        for branch in branches:
+            assert issubclass(branch, models.Model)
+            model_name = branch._meta.model_name
+            attrs[model_name] = GenericRelation(branch,
+                                                object_id_field="source_id",
+                                                content_type_field="source_type",
+                                                related_query_name=name.lower())
+
+            source_type = models.ForeignKey(ContentType, default=None, null=True, blank=True, on_delete=models.CASCADE, editable=False)
+            source_id = models.PositiveIntegerField(default=None, null=True, blank=True, editable=False)
+            source_obj = GenericForeignKey(ct_field="source_type", fk_field="source_id")
+
+            source_type.contribute_to_class(branch, name="source_type")
+            source_id.contribute_to_class(branch, name="source_id")
+            source_obj.contribute_to_class(branch, name="source_obj")
         new_class = super_new(mcs, name, bases, attrs)
         return new_class
+
 
 '''
 class BranchBase(ModelBase):

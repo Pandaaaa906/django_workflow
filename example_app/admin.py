@@ -45,17 +45,11 @@ class VoucherAdmin(SmallTextArea, admin.ModelAdmin):
             obj.proceeding.get(status=Proceeding.PROCESSING).audit(user=request.user)
 
     def get_proceeding_status(self, obj):
-        l_result = obj.proceeding.filter().order_by('-created')
-        result = None
-        if l_result:
-            result = l_result[0].status
+        result = getattr(obj.proceeding, "status", None)
         return result
 
     def get_node_name(self, obj):
-        l_result = obj.proceeding.filter().order_by('-created')
-        result = None
-        if l_result:
-            result = getattr(l_result[0].node, 'name', None)
+        result = getattr(obj.proceeding.node, 'name', None)
         return result
 
     def get_created_by(self, obj):
@@ -67,10 +61,10 @@ class VoucherAdmin(SmallTextArea, admin.ModelAdmin):
 
 @admin.register(Inquiry)
 class InquiryAdmin(VoucherAdmin, admin.ModelAdmin):
-    list_display = ('pk', 'get_customer', 'get_sales_name', 'get_proceeding_status','get_node_name', 'get_created_by')
+    list_display = ('pk', 'get_customer', 'get_sales_name', 'get_proceeding_status', 'get_node_name', 'get_created_by',)
 
     inlines = [FlowNodeInline, ]
-    search_fields = ('cat_no', 'name', 'cas', 'pk', 'proceeding__status', 'created_by__username')
+    search_fields = ('cat_no', 'name', 'cas', 'pk', 'proceeding__status', 'created_by__username', 'quotation__product_cat_no')
 
     fieldsets = (
         [None, {
