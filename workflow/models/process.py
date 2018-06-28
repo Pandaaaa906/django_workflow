@@ -8,7 +8,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.translation import ugettext_lazy as _
 
-from .flow import Flow, FlowNode
+from .flow import Flow, Node
 from workflow.models.mixin import ModifiedByMixin, CreatedByMixin, ModifiedMixin, CreatedMixin
 
 
@@ -46,12 +46,12 @@ class Proceeding(CreatedMixin,
     voucher_obj = GenericForeignKey('voucher_type', 'voucher_obj_id')
 
     flow = models.ForeignKey(Flow, on_delete=models.PROTECT)
-    node = models.ForeignKey(FlowNode, on_delete=models.PROTECT, null=True)
+    node = models.ForeignKey(Node, on_delete=models.PROTECT, null=True)
 
     # TODO 检查self.
     def can_audit_by(self, user):
         # 如果不是USER_TYPE，返回False
-        if self.node.node_type != FlowNode.USER_TYPE:
+        if self.node.node_type != Node.USER_TYPE:
             print("节点类型不是用户类型")
             return False
         app_group = self.node.approval_group_type.model_class()
@@ -96,9 +96,8 @@ class Proceeding(CreatedMixin,
     def save(self, *args, **kwargs):
         if not self.pk:
             self.flow = self.get_active_workflow()
-            self.node = FlowNode.objects.get(flow=self.flow,
-                                             node_type=FlowNode.START_TYPE).next_node
-        if self.node.node_type == FlowNode.END_TYPE:
+            self.node = Node.objects.get(flow=self.flow, is_start=True)
+        if self.node.is_end:
             self.voucher_obj.post_approval()
             self.status = self.APPROVED
         super(Proceeding, self).save(*args, **kwargs)

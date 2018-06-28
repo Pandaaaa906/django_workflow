@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.db import models
 from django.forms import TextInput, Textarea
 
-from workflow.models import Flow, FlowNode, Proceeding
+from workflow.models import Flow, Node, Proceeding, Transaction
 from django.utils.translation import ugettext_lazy as _
 
 
@@ -29,8 +29,18 @@ class JSONWidget(Textarea):
     pass
 
 
-class FlowNodeInline(admin.TabularInline):
-    model = FlowNode
+class NodeInline(admin.TabularInline):
+    model = Node
+    extra = 0
+    formfield_overrides = {
+        models.CharField: {'widget': TextInput(attrs={'size': '20'})},
+        models.TextField: {'widget': Textarea(attrs={'rows': 3, 'cols': 20})},
+        JSONField: {'widget': Textarea(attrs={'rows': 3, 'cols': 20})}
+    }
+
+
+class TransactionInline(admin.TabularInline):
+    model = Transaction
     extra = 0
     formfield_overrides = {
         models.CharField: {'widget': TextInput(attrs={'size': '20'})},
@@ -42,7 +52,7 @@ class FlowNodeInline(admin.TabularInline):
 @admin.register(Flow)
 class FlowAdmin(admin.ModelAdmin):
     list_display = ('pk', 'name', 'created', 'created_by', 'get_len_nodes')
-    inlines = [FlowNodeInline, ]
+    inlines = [NodeInline, TransactionInline]
     formfield_overrides = {
         models.CharField: {'widget': TextInput(attrs={'size': '20'})},
         models.TextField: {'widget': Textarea(attrs={'rows': 1, 'cols': 30})},
@@ -65,9 +75,9 @@ class FlowAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
     def get_len_nodes(self, obj):
-        return FlowNode.objects.filter(flow=obj).count()
+        return Node.objects.filter(flow=obj).count()
 
     get_len_nodes.short_description = _("节点数量")
 
 
-admin.site.register(FlowNode)
+admin.site.register(Node)
