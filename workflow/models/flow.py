@@ -76,6 +76,7 @@ class Node(CreatedMixin,
         ordering = ['flow', 'id']
 
 
+# TODO 新增的时候，自动新增对象权限为superuser?
 class Transaction(CreatedMixin,
                   ModifiedMixin,
                   CreatedByMixin,

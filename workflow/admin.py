@@ -4,6 +4,7 @@ from django.contrib import admin
 # Register your models here.
 from django.db import models
 from django.forms import TextInput, Textarea
+from guardian.admin import GuardedModelAdmin
 
 from workflow.models import Flow, Node, Proceeding, Transaction, FlowVoucher
 from django.utils.translation import ugettext_lazy as _
@@ -30,9 +31,7 @@ class JSONWidget(Textarea):
     pass
 
 
-class NodeInline(admin.TabularInline):
-    model = Node
-    extra = 0
+class BaseInline(admin.TabularInline):
     formfield_overrides = {
         models.CharField: {'widget': TextInput(attrs={'size': '20'})},
         models.TextField: {'widget': Textarea(attrs={'rows': 1, 'cols': 20})},
@@ -40,8 +39,18 @@ class NodeInline(admin.TabularInline):
     }
 
 
-class TransactionInline(admin.TabularInline):
+class NodeInline(BaseInline):
+    model = Node
+    extra = 0
+
+
+class TransactionInline(BaseInline):
     model = Transaction
+    extra = 0
+
+
+class VoucherInline(admin.TabularInline):
+    model = FlowVoucher
     extra = 0
     formfield_overrides = {
         models.CharField: {'widget': TextInput(attrs={'size': '20'})},
@@ -53,7 +62,7 @@ class TransactionInline(admin.TabularInline):
 @admin.register(Flow)
 class FlowAdmin(admin.ModelAdmin):
     list_display = ('pk', 'name', 'created', 'created_by', 'get_len_nodes', 'get_vouchers')
-    inlines = [NodeInline, TransactionInline]
+    inlines = [VoucherInline, NodeInline, TransactionInline]
     formfield_overrides = {
         models.CharField: {'widget': TextInput(attrs={'size': '20'})},
         models.TextField: {'widget': Textarea(attrs={'rows': 1, 'cols': 30})},
@@ -85,3 +94,10 @@ class FlowAdmin(admin.ModelAdmin):
 
 
 admin.site.register(FlowVoucher)
+
+
+class AuthorAdmin(GuardedModelAdmin):
+    pass
+
+
+admin.site.register(Transaction, AuthorAdmin)
