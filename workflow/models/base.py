@@ -10,7 +10,6 @@ from django.utils.translation import ugettext_lazy as _
 from workflow.contrib.permissions import VOUCHER_PERMISSIONS
 
 
-
 class VoucherBase(ModelBase):
     def __new__(mcs, name, bases, attrs):
         super_new = super().__new__
@@ -67,9 +66,6 @@ class VoucherBase(ModelBase):
 
         new_class = super_new(mcs, name, bases, attrs)
 
-        if not abstract:
-            if getattr(new_class, 'code_name') is None:
-                raise ValueError(_("单据code_name不能为空"))
         return new_class
 
 
@@ -91,7 +87,7 @@ class VoucherInlineBase(ModelBase):
         attrs["parent_voucher"] = models.ForeignKey(model,
                                                     verbose_name=_("单据"),
                                                     on_delete=models.CASCADE,
-                                                    related_name="inlines")
+                                                    related_name=name.lower())
         attr_meta = attrs.setdefault('Meta', type('Meta', (), {}))
         branches = attrs.setdefault("branches", [])
         for branch in branches:

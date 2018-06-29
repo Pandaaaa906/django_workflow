@@ -5,13 +5,13 @@ from django.contrib import admin
 from django.db import models
 from django.forms import TextInput, Textarea
 
-from workflow.models import Flow, Node, Proceeding, Transaction
+from workflow.models import Flow, Node, Proceeding, Transaction, FlowVoucher
 from django.utils.translation import ugettext_lazy as _
 
 
 @admin.register(Proceeding)
 class ProceedingAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'status', 'get_voucher_id', 'get_flow_name', 'get_node_name')
+    list_display = ('pk', 'get_voucher_id', 'get_flow_name', 'get_node_name')
 
     def get_voucher_id(self, obj):
         return obj.voucher_obj.code_name
@@ -25,6 +25,7 @@ class ProceedingAdmin(admin.ModelAdmin):
     class Media:
         js = ("https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/4.2.1/jsoneditor.js",)
 
+
 class JSONWidget(Textarea):
     pass
 
@@ -34,7 +35,7 @@ class NodeInline(admin.TabularInline):
     extra = 0
     formfield_overrides = {
         models.CharField: {'widget': TextInput(attrs={'size': '20'})},
-        models.TextField: {'widget': Textarea(attrs={'rows': 3, 'cols': 20})},
+        models.TextField: {'widget': Textarea(attrs={'rows': 1, 'cols': 20})},
         JSONField: {'widget': Textarea(attrs={'rows': 3, 'cols': 20})}
     }
 
@@ -44,14 +45,14 @@ class TransactionInline(admin.TabularInline):
     extra = 0
     formfield_overrides = {
         models.CharField: {'widget': TextInput(attrs={'size': '20'})},
-        models.TextField: {'widget': Textarea(attrs={'rows': 3, 'cols': 20})},
+        models.TextField: {'widget': Textarea(attrs={'rows': 1, 'cols': 20})},
         JSONField: {'widget': Textarea(attrs={'rows': 3, 'cols': 20})}
     }
 
 
 @admin.register(Flow)
 class FlowAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name', 'created', 'created_by', 'get_len_nodes')
+    list_display = ('pk', 'name', 'created', 'created_by', 'get_len_nodes', 'get_vouchers')
     inlines = [NodeInline, TransactionInline]
     formfield_overrides = {
         models.CharField: {'widget': TextInput(attrs={'size': '20'})},
@@ -59,12 +60,8 @@ class FlowAdmin(admin.ModelAdmin):
     }
     fieldsets = (
         [None, {
-            'fields': ('name', 'voucher_type', 'in_use'),
+            'fields': ('name',),
         }],
-        ['Node', {
-            'classes': ('collapse',),
-            'fields': (),
-        }]
 
     )
 
@@ -79,5 +76,12 @@ class FlowAdmin(admin.ModelAdmin):
 
     get_len_nodes.short_description = _("节点数量")
 
+    def get_vouchers(self, obj):
+        results = FlowVoucher.objects.filter(flow=obj)
+        return "<br>".join((str(result) for result in results))
 
-admin.site.register(Node)
+    get_vouchers.short_description = _("单据列表")
+    get_vouchers.allow_tags = True
+
+
+admin.site.register(FlowVoucher)

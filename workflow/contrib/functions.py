@@ -1,7 +1,11 @@
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.db.models import ManyToOneRel, ForeignKey, ManyToManyRel
 from django.db.models.constants import LOOKUP_SEP
+from django.shortcuts import get_object_or_404
+from django.utils.safestring import mark_safe
 
+from workflow.models import Flow, Voucher
+from django.apps import apps
 
 def get_keys_from_model(model, max_depth=1, **kwargs):
     """
@@ -62,3 +66,23 @@ def get_keys_from_model(model, max_depth=1, **kwargs):
             yield (key, value)
 
 
+# TODO under construct
+def copy_flow(flow):
+    if not isinstance(flow, Flow):
+        raise ValueError("It's Not a Flow type")
+    flow.pk = None
+    flow.save()
+
+
+def get_transactions(app_label, model_name, obj_pk):
+    model = apps.get_model(app_label, model_name)
+    if not issubclass(model, Voucher):
+        raise ValueError(_("It's not a voucher type"))
+    obj = get_object_or_404(model, pk=obj_pk)
+    return obj.proceeding.node.next_transactions
+
+
+def get_transaction_buttons(obj):
+    trxs = obj.proceeding.node.next_transactions.all()
+    html = "".join((f'''<form action='workflow/{obj._meta.app_label}/{obj._meta.model_name}/{trx.name}/{obj.id}' method='POST'><button class='btn'>{trx.name}</button></form>'''for trx in trxs))
+    return mark_safe(html)

@@ -3,10 +3,12 @@ from django.contrib import admin
 # Register your models here.
 from django.db import models
 from django.forms import TextInput, Textarea
+from django.utils.safestring import mark_safe
 
 from example_app.models import Inquiry, MyVoucher, InquiryInline, Quotation
 from django.utils.translation import ugettext_lazy as _
 
+from workflow.contrib.functions import get_transaction_buttons
 from workflow.models import Proceeding
 
 
@@ -17,7 +19,7 @@ class SmallTextArea(object):
     }
 
 
-class FlowNodeInline(SmallTextArea, admin.TabularInline):
+class InquiryInlineAdmin(SmallTextArea, admin.TabularInline):
     model = InquiryInline
     extra = 0
 
@@ -49,6 +51,8 @@ class VoucherAdmin(SmallTextArea, admin.ModelAdmin):
         return result
 
     def get_node_name(self, obj):
+        if not obj.proceeding:
+            return None
         result = getattr(obj.proceeding.node, 'name', None)
         return result
 
@@ -61,9 +65,9 @@ class VoucherAdmin(SmallTextArea, admin.ModelAdmin):
 
 @admin.register(Inquiry)
 class InquiryAdmin(VoucherAdmin, admin.ModelAdmin):
-    list_display = ('pk', 'get_customer', 'get_sales_name', 'get_proceeding_status', 'get_node_name', 'get_created_by',)
+    list_display = ('pk', 'get_customer', 'get_sales_name', 'get_proceeding_status', 'get_node_name', 'get_created_by','get_transaction_buttons')
 
-    inlines = [FlowNodeInline, ]
+    inlines = [InquiryInlineAdmin, ]
     search_fields = ('cat_no', 'name', 'cas', 'pk', 'proceeding__status', 'created_by__username', 'quotation__product_cat_no')
 
     fieldsets = (
@@ -82,6 +86,11 @@ class InquiryAdmin(VoucherAdmin, admin.ModelAdmin):
     def get_customer(self, obj):
         return obj.customer
 
+    def get_transaction_buttons(self, obj):
+
+        return get_transaction_buttons(obj)
+    get_transaction_buttons.short_description = "功能"
+    get_transaction_buttons.allow_tags = True
 
 @admin.register(MyVoucher)
 class MyVoucherAdmin(VoucherAdmin, admin.ModelAdmin):

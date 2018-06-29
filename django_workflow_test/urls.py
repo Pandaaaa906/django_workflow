@@ -15,7 +15,13 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
+from django.urls import path
+
+from workflow.views import ProcessTransaction
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    path(r'workflow/<slug:app_label>/<slug:model_name>/<slug:transaction>/<int:obj_pk>/', ProcessTransaction.as_view()),
+    path(r'workflow/<slug:app_label>/<slug:model_name>/<int:obj_pk>/', ProcessTransaction.as_view()),
+
 ]
