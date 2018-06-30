@@ -12,7 +12,6 @@ class Voucher(CreatedMixin,
               ModifiedMixin,
               CreatedByMixin,
               ModifiedByMixin,
-              models.Model,
               metaclass=VoucherBase
               ):
     class Meta:
@@ -54,12 +53,18 @@ class Voucher(CreatedMixin,
             return True
         return proceeding.node.editable
 
+    # TODO 根据obj返回
+    def get_inlines(self, obj):
+        print(obj)
+        if issubclass(obj, VoucherInline):
+            pass
+        return None
+
 
 class VoucherInline(CreatedMixin,
                     ModifiedMixin,
                     CreatedByMixin,
                     ModifiedByMixin,
-                    models.Model,
                     metaclass=VoucherInlineBase):
     parent_voucher = None
 

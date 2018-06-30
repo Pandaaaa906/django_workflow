@@ -42,10 +42,9 @@ class Inquiry(Voucher):
 
     class Meta:
         verbose_name = _("询单")
-        branches = [Quotation, ]
 
     def post_approval(self):
-        for obj in self.inlines.all():
+        for obj in InquiryInline.objects.filter(parent_voucher=self.pk):
             Quotation.objects.create(source_obj=obj)
 
 
