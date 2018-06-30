@@ -42,6 +42,7 @@ class Inquiry(Voucher):
 
     class Meta:
         verbose_name = _("询单")
+        branches = [Quotation, ]
 
     def post_approval(self):
         for obj in self.inlines.all():
